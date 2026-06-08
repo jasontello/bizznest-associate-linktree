@@ -20,66 +20,69 @@ const iconPaths = {
   ),
 };
 
-function Icon({ name }) {
+export function LinkIcon({ name }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      {iconPaths[name]}
+    <span className="link-icon" aria-hidden="true">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {iconPaths[name]}
+      </svg>
+    </span>
+  );
+}
+
+function MoreIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="5" cy="12" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="19" cy="12" r="1.5" />
     </svg>
   );
 }
 
-function ArrowIcon() {
-  return (
-    <svg
-      className="link-arrow"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M7 17 17 7M8 7h9v9" />
-    </svg>
-  );
-}
-
-function LinkCard({ link, shape, theme }) {
+function LinkCard({ link, title, shape, theme, onEdit }) {
   const isExternal = link.url.startsWith("http");
 
   return (
-    <a
-      className="link-card"
-      data-shape={shape}
-      href={link.url}
-      target={isExternal ? "_blank" : undefined}
-      rel={isExternal ? "noreferrer" : undefined}
-      download={link.download}
+    <div
+      className="link-card-shell"
       style={{
         "--card-background": theme.background,
         "--card-text": theme.text,
-        "--card-shadow": theme.shadow,
       }}
-      aria-label={`${link.title}: ${link.description}${isExternal ? " (opens in a new tab)" : ""}`}
     >
-      <span className="link-icon">
-        <Icon name={link.icon} />
-      </span>
-      <span className="link-content">
-        <span className="link-title">{link.title}</span>
-        <span className="link-description">{link.description}</span>
-      </span>
-      <ArrowIcon />
-    </a>
+      <a
+        className="link-card"
+        data-shape={shape}
+        href={link.url}
+        target={isExternal ? "_blank" : undefined}
+        rel={isExternal ? "noreferrer" : undefined}
+        download={link.download}
+        aria-label={`${title}: ${link.description}${isExternal ? " (opens in a new tab)" : ""}`}
+      >
+        <LinkIcon name={link.icon} />
+        <span className="link-content">
+          <span className="link-title">{title}</span>
+          <span className="link-description">{link.description}</span>
+        </span>
+      </a>
+
+      <button
+        className="link-menu-button"
+        type="button"
+        aria-label={`Customize ${title}`}
+        onClick={onEdit}
+      >
+        <MoreIcon />
+      </button>
+    </div>
   );
 }
 

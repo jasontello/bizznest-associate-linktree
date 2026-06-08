@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "./App.css";
-import LinkCustomizer from "./components/LinkCustomizer.jsx";
+import LinkEditor from "./components/LinkEditor.jsx";
 import LinkList from "./components/LinkList.jsx";
 import ProfileHeader from "./components/ProfileHeader.jsx";
 import { links } from "./data/links.js";
@@ -9,33 +9,119 @@ import { defaultPreferences, themes } from "./data/themes.js";
 const storageKey = "associate-link-style";
 const validShapes = new Set(["pill", "rounded", "square"]);
 
+function createDefaultCustomizations(theme = defaultPreferences.theme) {
+  return Object.fromEntries(
+    links.map((link) => [
+      link.id,
+      {
+        title: link.title,
+        theme,
+      },
+    ]),
+  );
+}
+
 function readSavedPreferences() {
+  const defaults = createDefaultCustomizations();
+
   try {
     const saved = JSON.parse(window.localStorage.getItem(storageKey));
-    const themeExists = themes.some((theme) => theme.id === saved?.theme);
+    const fallbackTheme = themes.some((theme) => theme.id === saved?.theme)
+      ? saved.theme
+      : defaultPreferences.theme;
+
+    const customizations = Object.fromEntries(
+      links.map((link) => {
+        const savedLink = saved?.links?.[link.id];
+        const savedTheme = themes.some(
+          (theme) => theme.id === savedLink?.theme,
+        )
+          ? savedLink.theme
+          : fallbackTheme;
+        const savedTitle =
+          typeof savedLink?.title === "string" && savedLink.title.trim()
+            ? savedLink.title.slice(0, 28)
+            : defaults[link.id].title;
+
+        return [
+          link.id,
+          {
+            title: savedTitle,
+            theme: savedTheme,
+          },
+        ];
+      }),
+    );
 
     return {
       shape: validShapes.has(saved?.shape)
         ? saved.shape
         : defaultPreferences.shape,
-      theme: themeExists ? saved.theme : defaultPreferences.theme,
+      links: customizations,
     };
   } catch {
-    return defaultPreferences;
+    return {
+      shape: defaultPreferences.shape,
+      links: defaults,
+    };
   }
 }
 
 function App() {
   const [preferences, setPreferences] = useState(readSavedPreferences);
-  const activeTheme =
-    themes.find((theme) => theme.id === preferences.theme) ?? themes[0];
+  const [editingLinkId, setEditingLinkId] = useState(null);
+  const editingLink = links.find((link) => link.id === editingLinkId);
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(preferences));
   }, [preferences]);
 
-  function updatePreference(name, value) {
-    setPreferences((current) => ({ ...current, [name]: value }));
+  const closeEditor = useCallback(() => {
+    setPreferences((current) => {
+      if (!editingLinkId || current.links[editingLinkId].title.trim()) {
+        return current;
+      }
+
+      const fallbackTitle =
+        links.find((link) => link.id === editingLinkId)?.title ?? "Link";
+
+      return {
+        ...current,
+        links: {
+          ...current.links,
+          [editingLinkId]: {
+            ...current.links[editingLinkId],
+            title: fallbackTitle,
+          },
+        },
+      };
+    });
+    setEditingLinkId(null);
+  }, [editingLinkId]);
+
+  function updateLink(linkId, changes) {
+    setPreferences((current) => ({
+      ...current,
+      links: {
+        ...current.links,
+        [linkId]: {
+          ...current.links[linkId],
+          ...changes,
+        },
+      },
+    }));
+  }
+
+  function applyThemeToAll(theme) {
+    setPreferences((current) => ({
+      ...current,
+      links: Object.fromEntries(
+        Object.entries(current.links).map(([linkId, customization]) => [
+          linkId,
+          { ...customization, theme },
+        ]),
+      ),
+    }));
   }
 
   return (
@@ -44,19 +130,36 @@ function App() {
         <ProfileHeader />
 
         <section className="links-panel" aria-labelledby="links-heading">
-          <h2 id="links-heading">My links</h2>
+          <div className="links-heading-row">
+            <h2 id="links-heading">Links</h2>
+            <p>Use the menu on any card to personalize it.</p>
+          </div>
           <LinkList
             links={links}
+            customizations={preferences.links}
             shape={preferences.shape}
-            theme={activeTheme}
-          />
-          <LinkCustomizer
-            preferences={preferences}
             themes={themes}
-            onChange={updatePreference}
+            onEdit={setEditingLinkId}
           />
         </section>
       </div>
+
+      {editingLink ? (
+        <LinkEditor
+          key={editingLink.id}
+          link={editingLink}
+          customization={preferences.links[editingLink.id]}
+          shape={preferences.shape}
+          themes={themes}
+          onNameChange={(title) => updateLink(editingLink.id, { title })}
+          onThemeChange={(theme) => updateLink(editingLink.id, { theme })}
+          onApplyThemeToAll={applyThemeToAll}
+          onShapeChange={(shape) =>
+            setPreferences((current) => ({ ...current, shape }))
+          }
+          onClose={closeEditor}
+        />
+      ) : null}
     </main>
   );
 }

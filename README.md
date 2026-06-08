@@ -11,7 +11,8 @@ Live site: https://jasontello.github.io/bizznest-associate-linktree/
 - Responsive mobile and desktop layouts
 - Accessible links and keyboard-friendly customizer controls
 - Downloadable résumé
-- Link Style Customizer with saved preferences
+- Per-link color and name customization with saved preferences
+- Shared pill, rounded, and square card shapes
 
 ## Run Locally
 
@@ -34,22 +35,24 @@ npm run preview
 
 ## Link Style Customizer
 
-The customizer lets visitors apply one of three shapes and four curated solid
-background colors to every link card. Changes appear immediately.
+Each link card has a small menu that opens a focused editor. Visitors can change
+that card's solid background color, edit its display name inline, apply a color
+to every link, and choose one of three shared card shapes. Changes appear
+immediately.
 
 I chose this feature because most Linktree pages offer limited visual control.
 It demonstrates a focused use of React state, event handling, dynamic styles,
 and browser storage without turning the page into a full design editor.
 
-`App.jsx` owns the current `shape` and `theme` preferences. Button events update
-that state, and React passes the selected values to every `LinkCard`. A
-`useEffect` saves the preferences to `localStorage`; the state initializer
-validates and restores them when the page loads again.
+`App.jsx` owns the shared shape and each link's title and color. Button and input
+events update that state, and React passes the selected values to every
+`LinkCard`. A `useEffect` saves the preferences to `localStorage`; the state
+initializer validates and restores them when the page loads again.
 
-The trickiest part was applying one shared choice to every card while keeping
-the components easy to read. The shape uses a `data-shape` attribute, while the
-selected theme supplies a small set of CSS custom properties for background,
-text, and shadow colors.
+The trickiest part was supporting both shared and per-link settings while
+keeping the state predictable. The shared shape uses a `data-shape` attribute,
+while each selected color supplies CSS custom properties for the card
+background and readable text color.
 
 ## Deployment
 
