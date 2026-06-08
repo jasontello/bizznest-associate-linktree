@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import LinkEditor from "./components/LinkEditor.jsx";
 import LinkList from "./components/LinkList.jsx";
@@ -7,7 +7,6 @@ import { links } from "./data/links.js";
 import { defaultPreferences, themes } from "./data/themes.js";
 
 const storageKey = "associate-link-style";
-const validShapes = new Set(["pill", "rounded", "square"]);
 
 function createDefaultCustomizations(theme = defaultPreferences.theme) {
   return Object.fromEntries(
@@ -53,30 +52,34 @@ function readSavedPreferences() {
       }),
     );
 
-    return {
-      shape: validShapes.has(saved?.shape)
-        ? saved.shape
-        : defaultPreferences.shape,
-      links: customizations,
-    };
+    return { links: customizations };
   } catch {
-    return {
-      shape: defaultPreferences.shape,
-      links: defaults,
-    };
+    return { links: defaults };
   }
 }
 
 function App() {
   const [preferences, setPreferences] = useState(readSavedPreferences);
-  const [editingLinkId, setEditingLinkId] = useState(null);
+  const [editorState, setEditorState] = useState(null);
+  const editorOpenRef = useRef(false);
+  const returnFocusRef = useRef(null);
+  const editingLinkId = editorState?.linkId ?? null;
   const editingLink = links.find((link) => link.id === editingLinkId);
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(preferences));
   }, [preferences]);
 
+  useEffect(() => {
+    if (!editorState && returnFocusRef.current) {
+      returnFocusRef.current.focus();
+      returnFocusRef.current = null;
+    }
+  }, [editorState]);
+
   const closeEditor = useCallback(() => {
+    returnFocusRef.current = editorState?.triggerElement ?? null;
+
     setPreferences((current) => {
       if (!editingLinkId || current.links[editingLinkId].title.trim()) {
         return current;
@@ -96,8 +99,18 @@ function App() {
         },
       };
     });
-    setEditingLinkId(null);
-  }, [editingLinkId]);
+    setEditorState(null);
+    editorOpenRef.current = false;
+  }, [editingLinkId, editorState?.triggerElement]);
+
+  function openEditor(linkId, origin) {
+    if (editorOpenRef.current) {
+      return;
+    }
+
+    editorOpenRef.current = true;
+    setEditorState({ linkId, ...origin });
+  }
 
   function updateLink(linkId, changes) {
     setPreferences((current) => ({
@@ -137,9 +150,9 @@ function App() {
           <LinkList
             links={links}
             customizations={preferences.links}
-            shape={preferences.shape}
             themes={themes}
-            onEdit={setEditingLinkId}
+            editingLinkId={editingLinkId}
+            onEdit={openEditor}
           />
         </section>
       </div>
@@ -149,14 +162,11 @@ function App() {
           key={editingLink.id}
           link={editingLink}
           customization={preferences.links[editingLink.id]}
-          shape={preferences.shape}
+          origin={editorState}
           themes={themes}
           onNameChange={(title) => updateLink(editingLink.id, { title })}
           onThemeChange={(theme) => updateLink(editingLink.id, { theme })}
           onApplyThemeToAll={applyThemeToAll}
-          onShapeChange={(shape) =>
-            setPreferences((current) => ({ ...current, shape }))
-          }
           onClose={closeEditor}
         />
       ) : null}

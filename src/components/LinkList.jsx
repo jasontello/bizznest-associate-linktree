@@ -1,6 +1,12 @@
 import LinkCard from "./LinkCard.jsx";
 
-function LinkList({ links, customizations, shape, themes, onEdit }) {
+function LinkList({
+  links,
+  customizations,
+  themes,
+  editingLinkId,
+  onEdit,
+}) {
   return (
     <nav className="link-list" aria-label="Jason Tello links">
       {links.map((link) => {
@@ -13,9 +19,9 @@ function LinkList({ links, customizations, shape, themes, onEdit }) {
             key={link.id}
             link={link}
             title={customization.title}
-            shape={shape}
             theme={theme}
-            onEdit={() => onEdit(link.id)}
+            isEditing={editingLinkId === link.id}
+            onEdit={(origin) => onEdit(link.id, origin)}
           />
         );
       })}

@@ -1,6 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap");
 
 :root {
+  --editor-close-handoff-ms: 160;
   color: #1d1d1f;
   background: #ffffff;
   font-family: "Inter", Arial, sans-serif;
@@ -75,13 +76,14 @@ button {
   width: 100%;
   height: 100%;
   display: block;
-  padding: 7px;
+  padding: 0;
   object-fit: contain;
   object-position: center;
   border: 0;
   border-radius: 50%;
   background: #ffffff;
   filter: grayscale(1) contrast(1.8);
+  transform: translateY(10px);
 }
 
 .profile-name {
@@ -149,6 +151,10 @@ button {
   color: var(--card-text);
 }
 
+.link-card-shell.is-editing {
+  visibility: hidden;
+}
+
 .link-card {
   --card-radius: 16px;
   min-width: 0;
@@ -167,16 +173,6 @@ button {
     filter 180ms ease;
 }
 
-.link-card[data-shape="pill"],
-.editor-preview[data-shape="pill"] {
-  --card-radius: 999px;
-}
-
-.link-card[data-shape="square"],
-.editor-preview[data-shape="square"] {
-  --card-radius: 2px;
-}
-
 .link-card:hover {
   filter: brightness(0.97);
   transform: translateY(-2px);
@@ -185,7 +181,6 @@ button {
 .link-card:focus-visible,
 .link-menu-button:focus-visible,
 .color-option:focus-visible,
-.shape-option:focus-visible,
 .apply-all-button:focus-visible,
 .editor-name-button:focus-visible,
 .editor-save-button:focus-visible,
@@ -258,24 +253,44 @@ button {
 }
 
 .link-editor {
-  width: min(calc(100% - 32px), 560px);
-  max-height: calc(100svh - 32px);
-  margin: auto;
-  padding: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 16px;
   overflow: auto;
   background: transparent;
   border: 0;
 }
 
 .link-editor::backdrop {
+  background: transparent;
+}
+
+.link-editor__backdrop {
+  position: fixed;
+  inset: 0;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(3px);
 }
 
+.link-editor__layout {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: calc(100svh - 32px);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
 .link-editor__surface {
+  width: min(100%, 560px);
   display: grid;
   gap: 26px;
   padding: 8px 0;
+  pointer-events: auto;
 }
 
 .editor-preview {
@@ -289,9 +304,46 @@ button {
   color: var(--card-text);
   background: var(--card-background);
   border-radius: var(--card-radius);
+  transform-origin: top left;
+  will-change: transform;
   transition:
     background 180ms ease,
     border-radius 180ms ease;
+}
+
+.editor-return-card {
+  position: fixed;
+  z-index: 2;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 14px 15px 18px;
+  overflow: hidden;
+  color: var(--card-text);
+  background: var(--card-background);
+  border-radius: 16px;
+  opacity: 0;
+  pointer-events: none;
+  will-change: top, left, width, height;
+}
+
+.editor-return-card__menu {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  color: var(--card-text);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: 50%;
+}
+
+.editor-return-card__menu svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
 }
 
 .editor-preview > .link-icon {
@@ -410,57 +462,29 @@ button {
   font-size: 0.74rem;
 }
 
-.shape-options {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.shape-option {
-  min-height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 9px 12px;
-  color: #333333;
-  background: #ffffff;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.76rem;
-}
-
-.shape-option[aria-pressed="true"] {
-  border-color: #1d1d1f;
-}
-
-.shape-preview {
-  width: 28px;
-  height: 12px;
-  background: #d9d9d9;
-  border-radius: 4px;
-}
-
-.shape-preview[data-shape="pill"] {
-  border-radius: 999px;
-}
-
-.shape-preview[data-shape="square"] {
-  border-radius: 0;
-}
-
 .editor-save-button {
   width: 100%;
   min-height: 44px;
   margin-top: 26px;
-  color: #ffffff;
-  background: #1d1d1f;
+  color: var(--save-text);
+  background: var(--save-background);
   border: 0;
   border-radius: 999px;
   cursor: pointer;
   font-size: 0.82rem;
   font-weight: 500;
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    transform 160ms ease;
+}
+
+.editor-save-button:hover {
+  transform: translateY(-1px);
+}
+
+.editor-save-button:active {
+  transform: translateY(0);
 }
 
 .visually-hidden {
@@ -500,7 +524,11 @@ button {
   }
 
   .link-editor {
-    width: calc(100% - 24px);
+    padding: 12px;
+  }
+
+  .link-editor__layout {
+    min-height: calc(100svh - 24px);
   }
 
   .link-editor__surface {
@@ -526,10 +554,6 @@ button {
     height: 36px;
   }
 
-  .shape-option {
-    flex-direction: column;
-    gap: 5px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

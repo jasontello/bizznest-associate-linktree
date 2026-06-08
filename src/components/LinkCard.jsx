@@ -1,3 +1,5 @@
+import { useRef } from "react";
+
 const iconPaths = {
   portfolio: (
     <>
@@ -37,7 +39,7 @@ export function LinkIcon({ name }) {
   );
 }
 
-function MoreIcon() {
+export function MoreIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="5" cy="12" r="1.5" />
@@ -47,12 +49,14 @@ function MoreIcon() {
   );
 }
 
-function LinkCard({ link, title, shape, theme, onEdit }) {
+function LinkCard({ link, title, theme, isEditing, onEdit }) {
   const isExternal = link.url.startsWith("http");
+  const cardRef = useRef(null);
 
   return (
     <div
-      className="link-card-shell"
+      className={`link-card-shell${isEditing ? " is-editing" : ""}`}
+      data-link-id={link.id}
       style={{
         "--card-background": theme.background,
         "--card-text": theme.text,
@@ -60,7 +64,7 @@ function LinkCard({ link, title, shape, theme, onEdit }) {
     >
       <a
         className="link-card"
-        data-shape={shape}
+        ref={cardRef}
         href={link.url}
         target={isExternal ? "_blank" : undefined}
         rel={isExternal ? "noreferrer" : undefined}
@@ -78,7 +82,22 @@ function LinkCard({ link, title, shape, theme, onEdit }) {
         className="link-menu-button"
         type="button"
         aria-label={`Customize ${title}`}
-        onClick={onEdit}
+        aria-haspopup="dialog"
+        aria-expanded={isEditing}
+        onClick={(event) => {
+          const cardElement = cardRef.current;
+
+          if (!cardElement) {
+            return;
+          }
+
+          onEdit({
+            cardElement,
+            triggerElement: event.currentTarget,
+            rect: cardElement.getBoundingClientRect(),
+            borderRadius: window.getComputedStyle(cardElement).borderRadius,
+          });
+        }}
       >
         <MoreIcon />
       </button>

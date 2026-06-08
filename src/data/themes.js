@@ -62,6 +62,5 @@ export const themes = [
 ];
 
 export const defaultPreferences = {
-  shape: "rounded",
   theme: "sky",
 };
