@@ -8,6 +8,7 @@ const motionTiming = {
 };
 
 function waitForPaint() {
+  // Let the restored list card paint before removing the dialog's top layer.
   return new Promise((resolve) => {
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(resolve);
@@ -105,6 +106,7 @@ function LinkEditor({
     }
 
     const previewRect = preview.getBoundingClientRect();
+    // FLIP keeps the opening motion tied to the card the user selected.
     const inverseTransform = getInverseTransform(previewRect);
     const previewAnimation = preview.animate(
       [
